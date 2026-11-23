@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  ci:
+    name: Lint, typecheck and build
+    runs-on: [self-hosted, Windows, X64, presentation-booking-platform]
+    timeout-minutes: 30
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      # CI-only placeholders. src/app/lib/supabase.ts creates a Supabase client
+      # at import time, so the production build needs syntactically valid values.
+      # These are not credentials; the uploaded artifact is not deployable.
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v7
+        with:
+          name: next-build
+          path: .next
+          if-no-files-found: error
+          include-hidden-files: true
+          overwrite: true
+          retention-days: 7

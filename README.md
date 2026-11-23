@@ -55,8 +55,7 @@ A Next.js application designed for managing student presentation bookings. This 
 ### Built With
 - Next.js 14 with App Router
 - TypeScript for type safety
-- Prisma as ORM
-- SQLite database
+- Supabase (Postgres) for storage
 - Tailwind CSS for styling
 - Zustand for state management
 - React Hook Form for form handling
@@ -75,8 +74,8 @@ A Next.js application designed for managing student presentation bookings. This 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18.17 or higher
-- npm or yarn package manager
+- Node.js 18.17 or higher (CI pins Node 22)
+- npm package manager (the repository ships a `package-lock.json`)
 
 ### Installation
 1. Clone the repository:
@@ -85,21 +84,18 @@ A Next.js application designed for managing student presentation bookings. This 
    cd presentation-booking
    ```
 
-2. Install dependencies:
+2. Install dependencies from the lockfile:
    ```bash
-   npm install
+   npm ci
    ```
 
-3. Set up the database:
-   ```bash
-   npx prisma generate
-   npx prisma db push
-   ```
-
-4. Create a .env file:
+3. Create a `.env.local` file with your Supabase project values (see `.env.example`):
    ```env
-   DATABASE_URL="file:./dev.db"
+   NEXT_PUBLIC_SUPABASE_URL=
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=
    ```
+
+4. Create the `bookings` table in Supabase by running [`create_bookings_table.sql`](create_bookings_table.sql) in the SQL editor.
 
 5. Run the development server:
    ```bash
@@ -108,28 +104,22 @@ A Next.js application designed for managing student presentation bookings. This 
 
 6. Open [http://localhost:3000](http://localhost:3000) in your browser
 
+## Scripts
+- `npm run dev`: start the development server
+- `npm run lint`: run ESLint through `next lint`
+- `npm run typecheck`: run `tsc --noEmit`
+- `npm run build`: production build
+- `npm start`: serve the production build
+
+CI runs on a self-hosted Windows runner (`.github/workflows/ci.yml`): `npm ci`, lint, build, typecheck.
+
 ## Environment Variables
-- `DATABASE_URL`: SQLite database URL (required)
+- `NEXT_PUBLIC_SUPABASE_URL`: Supabase project URL (required)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase anon key (required)
 
 ## Database Schema
 
-### Booking Model
-```prisma
-model Booking {
-  id            String   @id @default(cuid())
-  code          String   @unique
-  name          String
-  studentNumber String
-  company       String?
-  notes         String?
-  slot          String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@index([code])
-  @@index([slot])
-}
-```
+The Supabase table is created by [`create_bookings_table.sql`](create_bookings_table.sql). Columns: `id`, `code`, `name`, `student_number`, `company`, `notes`, `slot`, `created_at`, `updated_at`.
 
 ## API Routes
 
